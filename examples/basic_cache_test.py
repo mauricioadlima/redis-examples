@@ -63,5 +63,49 @@ def test_hash_operations(redis_client):
 
     redis_client.hincrby("user:1", "visits", 1)
     assert redis_client.hget("user:1", "visits") == "1"
-    
 
+def test_json_operations(redis_client):
+    data = {
+        "name": "Mauricio",
+        "age": 41,
+        "active": True,
+        "tags": ["redis", "python"]
+    }
+
+    redis_client.json().set("user:1", "$", data)
+    stored = redis_client.json().get("user:1")
+    assert stored == data
+
+    redis_client.json().arrappend("user:1", "$.tags", "testing")
+    tags = redis_client.json().get("user:1", "$.tags")
+    assert tags == [["redis", "python", "testing"]]
+
+    redis_client.json().set("user:1", "$.age", 42)
+    updated = redis_client.json().get("user:1")
+    assert updated["age"] == 42
+
+    redis_client.delete("user:1")
+    assert redis_client.json().get("user:1") is None
+    
+def test_bitmap_operations(redis_client):
+    redis_client.setbit("a", 1, 1)
+    redis_client.setbit("a", 3, 1)
+
+    redis_client.setbit("b", 3, 1)
+    redis_client.setbit("b", 4, 1)
+
+    assert redis_client.getbit("a", 1) == 1
+    assert redis_client.getbit("a", 2) == 0
+
+    redis_client.bitop("OR", "or_result", "a", "b")
+    assert redis_client.getbit("or_result", 1) == 1
+    assert redis_client.getbit("or_result", 3) == 1
+    assert redis_client.getbit("or_result", 4) == 1
+
+    redis_client.bitop("AND", "and_result", "a", "b")
+    assert redis_client.getbit("and_result", 1) == 0
+    assert redis_client.getbit("and_result", 3) == 1
+    assert redis_client.getbit("and_result", 4) == 0
+
+    assert redis_client.bitcount("a") == 2
+    assert redis_client.bitcount("b") == 2
