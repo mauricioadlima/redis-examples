@@ -45,11 +45,8 @@ def test_stream_xreadgroup(redis_client):
     redis_client.xadd("mystream", {"name": "Benicio"})
     redis_client.xadd("mystream", {"name": "Bruna"})
 
-    try:
-        redis_client.xgroup_create("mystream", "mygroup", id="0-0", mkstream=True)
-    except:
-        pass
-
+    redis_client.xgroup_create("mystream", "mygroup", id="0-0", mkstream=True)
+    
     messages = redis_client.xreadgroup(
         groupname="mygroup",
         consumername="consumer1",
